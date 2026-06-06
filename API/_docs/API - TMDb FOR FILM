@@ -1,7 +1,9 @@
 <!-- API FOR TMDb -->
+<!-- API Key now stored in .env file (TMDB_API_KEY) -->
+<!-- Load API key from environment: env('TMDB_API_KEY') -->
 
-<!-- api dasar = ?api_key=abcd332244  -->
+<!-- api dasar = ?api_key={TMDB_API_KEY}  -->
 
-<!-- api film populer = https://api.themoviedb.org/3/movie/popular?api_key=1ae43be23c47bdb5684288efa521b6cc&language=en-US&page=1  -->
+<!-- api film populer = https://api.themoviedb.org/3/movie/popular?api_key={TMDB_API_KEY}&language=en-US&page=1  -->
 
-<!-- api semua film = https://api.themoviedb.org/3/discover/movie?api_key=1ae43be23c47bdb5684288efa521b6cc&sort_by=popularity.desc&language=en-US&page=1 -->
+<!-- api semua film = https://api.themoviedb.org/3/discover/movie?api_key={TMDB_API_KEY}&sort_by=popularity.desc&language=en-US&page=1 -->
