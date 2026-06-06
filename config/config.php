@@ -43,7 +43,7 @@ function uploadFile($file, $type = 'poster') {
     }
     
     $fileName = basename($file["name"]);
-    $targetFilePath = $targetDir . time() . '_' . $fileName;
+    $targetFilePath = $targetDir . time() . '_' . uniqid() . '_' . $fileName;
     $fileType = strtolower(pathinfo($targetFilePath, PATHINFO_EXTENSION));
     
     // Allowed file types

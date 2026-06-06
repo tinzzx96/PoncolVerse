@@ -132,6 +132,40 @@ function editMovie(id) {
   });
 
   document.getElementById("poster").removeAttribute("required");
+
+  // Populate cast members
+  const container = document.getElementById("castContainer");
+  container.innerHTML = "";
+  if (Array.isArray(movie.cast) && movie.cast.length > 0) {
+    movie.cast.forEach((cast) => {
+      const castItem = document.createElement("div");
+      castItem.className = "cast-item";
+      const photoPreview = cast.photo ? `<img src="../${cast.photo}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 5px; margin-top: 5px; display: block;">` : '';
+      castItem.innerHTML = `
+        <div class="cast-item-grid">
+          <div class="form-group">
+            <label>Nama Aktor</label>
+            <input type="text" name="actor_names[]" value="${cast.name}" placeholder="Tom Holland">
+          </div>
+          <div class="form-group">
+            <label>Nama Karakter</label>
+            <input type="text" name="character_names[]" value="${cast.character}" placeholder="Peter Parker">
+          </div>
+          <div class="form-group">
+            <label>Foto Aktor (Kosongkan jika tidak ingin ganti)</label>
+            <input type="file" name="actor_photos[]" accept="image/*">
+            <input type="hidden" name="existing_actor_photos[]" value="${cast.photo}">
+            ${photoPreview}
+          </div>
+          <div class="form-group">
+            <button type="button" class="remove-cast-btn" onclick="this.closest('.cast-item').remove()"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      `;
+      container.appendChild(castItem);
+    });
+  }
+
   document.getElementById("movieModal").classList.add("active");
   document.body.style.overflow = "hidden";
 }
@@ -180,6 +214,7 @@ function addCastField() {
       <div class="form-group">
         <label>Foto Aktor</label>
         <input type="file" name="actor_photos[]" accept="image/*">
+        <input type="hidden" name="existing_actor_photos[]" value="">
       </div>
       <div class="form-group">
         <button type="button" class="remove-cast-btn" onclick="this.closest('.cast-item').remove()"><i class="fas fa-trash"></i></button>

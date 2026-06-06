@@ -2,16 +2,20 @@
 require_once 'config/config.php';
 require_once 'config/midtrans_config.php';
 
-// Cek parameter
-if (!isset($_GET['order_id']) || !isset($_GET['status'])) {
+// Midtrans bisa kirim order_id via GET atau POST
+$order_id = $_GET['order_id'] ?? $_POST['order_id'] ?? null;
+
+// Jika tidak ada order_id, coba ambil dari transaction_id
+if (!$order_id) {
+    $order_id = $_GET['transaction_id'] ?? $_POST['transaction_id'] ?? null;
+}
+
+if (!$order_id) {
     header('Location: index.php');
     exit;
 }
 
-$order_id = $_GET['order_id'];
-$status = $_GET['status'];
-
-// Ambil data transaction
+// Ambil data transaction dari DB
 $sql = "SELECT t.*, sp.name as plan_name, sp.duration_days 
         FROM transactions t 
         JOIN subscription_plans sp ON t.subscription_plan_id = sp.id 
@@ -27,9 +31,28 @@ if (!$transaction) {
     exit;
 }
 
-// Update transaction status
-if ($status === 'success') {
-    // Update transaction
+// Verifikasi status ke Midtrans API (lebih reliable dari GET param)
+$midtrans_status = getMidtransTransactionStatus($order_id);
+$transaction_status = $midtrans_status['transaction_status'] ?? 'unknown';
+$fraud_status = $midtrans_status['fraud_status'] ?? 'accept';
+
+// Tentukan apakah payment berhasil
+$is_success = ($transaction_status === 'settlement') || 
+              ($transaction_status === 'capture' && $fraud_status === 'accept') ||
+              ($transaction_status === 'capture' && $fraud_status === 'challenge');
+
+// Fallback: jika Midtrans API tidak bisa diakses, percaya GET param
+if (!$midtrans_status) {
+    $status_param = $_GET['status'] ?? 'unknown';
+    $is_success = ($status_param === 'success');
+    $transaction_status = $is_success ? 'settlement' : $status_param;
+}
+
+$start_date = '';
+$end_date = '';
+
+if ($is_success && $transaction['transaction_status'] !== 'settlement') {
+    // Update transaction status
     $sql_update = "UPDATE transactions SET transaction_status = 'settlement', updated_at = NOW() WHERE order_id = ?";
     $stmt_update = $conn->prepare($sql_update);
     $stmt_update->bind_param("s", $order_id);
@@ -53,18 +76,57 @@ if ($status === 'success') {
     $stmt_user->bind_param("issi", $plan_id, $start_date, $end_date, $user_id);
     $stmt_user->execute();
     
+    // Update session supaya tampil langsung tanpa re-login
+    if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user_id) {
+        $_SESSION['subscription_status'] = 'active';
+        $_SESSION['subscription_end'] = $end_date;
+        $_SESSION['subscription_plan_name'] = $transaction['plan_name'];
+    }
+    
     $message = 'Pembayaran berhasil! Subscription Anda sudah aktif.';
     $status_icon = 'fa-check-circle';
     $status_color = '#00ff88';
+
+} elseif ($is_success && $transaction['transaction_status'] === 'settlement') {
+    // Already processed, just read existing data
+    $end_date = $transaction['subscription_end'] ?? '';
     
-} elseif ($status === 'pending') {
+    // Re-fetch from DB for accurate subscription_end
+    $sql_re = "SELECT subscription_end, subscription_status, subscription_plan_id FROM users WHERE id = ?";
+    $stmt_re = $conn->prepare($sql_re);
+    $stmt_re->bind_param("i", $transaction['user_id']);
+    $stmt_re->execute();
+    $user_data = $stmt_re->get_result()->fetch_assoc();
+    $end_date = $user_data['subscription_end'] ?? $end_date;
+    
+    // Refresh session
+    if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $transaction['user_id']) {
+        $_SESSION['subscription_status'] = 'active';
+        $_SESSION['subscription_end'] = $end_date;
+        $_SESSION['subscription_plan_name'] = $transaction['plan_name'];
+    }
+    
+    $message = 'Pembayaran berhasil! Subscription Anda sudah aktif.';
+    $status_icon = 'fa-check-circle';
+    $status_color = '#00ff88';
+
+} elseif ($transaction_status === 'pending') {
     $message = 'Pembayaran Anda sedang diproses. Silakan selesaikan pembayaran.';
     $status_icon = 'fa-clock';
     $status_color = '#ff9800';
 } else {
-    $message = 'Pembayaran gagal. Silakan coba lagi.';
+    $message = 'Pembayaran gagal atau dibatalkan. Silakan coba lagi.';
     $status_icon = 'fa-times-circle';
     $status_color = '#ff003c';
+    
+    // Update transaction status jika gagal
+    if (!in_array($transaction['transaction_status'], ['settlement', 'capture'])) {
+        $fail_status = $transaction_status === 'expire' ? 'expire' : 'failure';
+        $sql_fail = "UPDATE transactions SET transaction_status = ?, updated_at = NOW() WHERE order_id = ?";
+        $stmt_fail = $conn->prepare($sql_fail);
+        $stmt_fail->bind_param("ss", $fail_status, $order_id);
+        $stmt_fail->execute();
+    }
 }
 ?>
 <!DOCTYPE html>

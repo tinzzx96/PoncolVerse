@@ -25,7 +25,7 @@ $approved_count = $conn->query($approved_count_sql)->fetch_assoc()['count'];
   <title>Kelola Testimonials - PoncolVerse</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="../assets/css/main.css" rel="stylesheet">
+  <link href="../../assets/css/main.css" rel="stylesheet">
   <style>
     body {
       background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0f 100%);
@@ -491,11 +491,20 @@ $approved_count = $conn->query($approved_count_sql)->fetch_assoc()['count'];
           <div class="toast-title">Konfirmasi</div>
           <div class="toast-message">${message}</div>
           <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-            <button onclick="this.closest('.toast').remove()" style="flex: 1; padding: 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 5px; color: white; cursor: pointer;">Batal</button>
-            <button onclick="(${onConfirm.toString()})(); this.closest('.toast').remove();" style="flex: 1; padding: 0.5rem; background: linear-gradient(135deg, #ff003c, #ff4d7a); border: none; border-radius: 5px; color: white; font-weight: 700; cursor: pointer;">Ya, Lanjutkan</button>
+            <button class="toast-cancel-btn" style="flex: 1; padding: 0.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 5px; color: white; cursor: pointer;">Batal</button>
+            <button class="toast-confirm-btn" style="flex: 1; padding: 0.5rem; background: linear-gradient(135deg, #ff003c, #ff4d7a); border: none; border-radius: 5px; color: white; font-weight: 700; cursor: pointer;">Ya, Lanjutkan</button>
           </div>
         </div>
       `;
+      
+      toast.querySelector('.toast-cancel-btn').addEventListener('click', () => {
+        toast.remove();
+      });
+      
+      toast.querySelector('.toast-confirm-btn').addEventListener('click', () => {
+        onConfirm();
+        toast.remove();
+      });
       
       container.appendChild(toast);
       return true;

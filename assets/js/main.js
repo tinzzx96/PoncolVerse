@@ -87,7 +87,7 @@ function renderAllMovies(movies) {
 // ===== CREATE MOVIE CARD =====
 function createMovieCard(movie) {
   const watchButton = movie.watchLink && movie.watchLink !== "#"
-    ? `<a href="${movie.watchLink}" target="_blank" class="watch-btn"><i class="fas fa-play"></i> Tonton</a>`
+    ? `<a href="javascript:void(0)" onclick="startWatchRedirect(event, '${movie.watchLink}')" class="watch-btn"><i class="fas fa-play"></i> Tonton</a>`
     : '<button class="watch-btn" onclick="alert(\'Link nonton belum tersedia\')"><i class="fas fa-play"></i> Tonton</button>';
   
   return `
@@ -982,3 +982,136 @@ document.addEventListener('DOMContentLoaded', function() {
     statsObserver.observe(aboutStats);
   }
 });
+
+// ===== WATCH REDIRECT MODAL =====
+function startWatchRedirect(event, link) {
+  if (event) {
+    event.preventDefault();
+  }
+  
+  // Create modal container if not exists
+  let redirectModal = document.getElementById('watchRedirectModal');
+  if (!redirectModal) {
+    redirectModal = document.createElement('div');
+    redirectModal.id = 'watchRedirectModal';
+    redirectModal.style.position = 'fixed';
+    redirectModal.style.top = '0';
+    redirectModal.style.left = '0';
+    redirectModal.style.width = '100vw';
+    redirectModal.style.height = '100vh';
+    redirectModal.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
+    redirectModal.style.backdropFilter = 'blur(15px)';
+    redirectModal.style.display = 'flex';
+    redirectModal.style.justifyContent = 'center';
+    redirectModal.style.alignItems = 'center';
+    redirectModal.style.zIndex = '99999';
+    redirectModal.style.opacity = '0';
+    redirectModal.style.transition = 'opacity 0.4s ease';
+    
+    redirectModal.innerHTML = `
+      <div style="
+        background: linear-gradient(135deg, rgba(26, 26, 26, 0.95), rgba(15, 15, 15, 0.95));
+        border: 2px solid rgba(255, 0, 60, 0.3);
+        border-radius: 20px;
+        padding: 3rem;
+        max-width: 450px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 0, 60, 0.15);
+        transform: scale(0.9);
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      " id="watchRedirectContent">
+        <!-- Spinner Container -->
+        <div id="watchRedirectSpinner" style="margin-bottom: 2rem;">
+          <div style="
+            width: 70px;
+            height: 70px;
+            border: 5px solid rgba(255, 0, 60, 0.1);
+            border-top: 5px solid #ff003c;
+            border-radius: 50%;
+            margin: 0 auto;
+            animation: watchSpin 1s linear infinite;
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.4);
+          "></div>
+        </div>
+        <h2 style="
+          font-family: 'Orbitron', sans-serif;
+          font-size: 1.8rem;
+          margin-bottom: 1rem;
+          background: linear-gradient(135deg, #ff003c, #ff4d7a);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          text-shadow: 0 0 10px rgba(255, 0, 60, 0.3);
+        " id="watchRedirectTitle">Menghubungkan ke Server</h2>
+        <p style="
+          color: #ccc;
+          font-size: 1.1rem;
+          line-height: 1.6;
+        " id="watchRedirectText">Mohon tunggu sebentar...</p>
+      </div>
+    `;
+    
+    // Add CSS spinner animation dynamically
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes watchSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(redirectModal);
+  }
+  
+  const content = document.getElementById('watchRedirectContent');
+  const spinner = document.getElementById('watchRedirectSpinner');
+  const title = document.getElementById('watchRedirectTitle');
+  const text = document.getElementById('watchRedirectText');
+  
+  // Reset contents to initial spinner state
+  spinner.style.display = 'block';
+  title.innerText = 'Menghubungkan ke Server';
+  text.innerText = 'Mohon tunggu sebentar...';
+  
+  // Show modal
+  redirectModal.style.display = 'flex';
+  // Force a reflow
+  redirectModal.offsetHeight;
+  redirectModal.style.opacity = '1';
+  content.style.transform = 'scale(1)';
+  document.body.style.overflow = 'hidden';
+  
+  // Step 1: Wait for 3 seconds of spinner loading
+  setTimeout(() => {
+    // Hide spinner
+    spinner.style.display = 'none';
+    title.innerText = 'Mempersiapkan Pemutar';
+    
+    // Step 2: Countdown 3 seconds
+    let countdown = 3;
+    text.innerHTML = `Segera Diarahkan Ke link Nonton Pada: <strong style="color: #ff003c; font-size: 1.3rem;">${countdown}</strong> detik`;
+    
+    const interval = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        text.innerHTML = `Segera Diarahkan Ke link Nonton Pada: <strong style="color: #ff003c; font-size: 1.3rem;">${countdown}</strong> detik`;
+      } else {
+        clearInterval(interval);
+        
+        // Hide modal
+        redirectModal.style.opacity = '0';
+        content.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          redirectModal.style.display = 'none';
+          document.body.style.overflow = '';
+        }, 400);
+        
+        // Open watch link in new tab
+        window.open(link, '_blank');
+      }
+    }, 1000);
+    
+  }, 3000);
+}
+

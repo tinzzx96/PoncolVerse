@@ -10,13 +10,7 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $movie_id = intval($_GET['id']);
 
 // HANYA AMBIL DARI DATABASE (NO TMDb!)
-$sql = "SELECT m.*, 
-        GROUP_CONCAT(DISTINCT CONCAT(c.actor_name, '|', COALESCE(c.actor_photo, ''), '|', COALESCE(c.character_name, '')) SEPARATOR '||') as cast_data
-        FROM movies m
-        LEFT JOIN cast_members c ON m.id = c.movie_id
-        WHERE m.id = ?
-        GROUP BY m.id";
-
+$sql = "SELECT * FROM movies WHERE id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $movie_id);
 $stmt->execute();
@@ -36,20 +30,22 @@ if (!is_array($genre_array)) {
 }
 $movie['genre'] = implode(', ', $genre_array);
 
-// Parse cast
+// Get cast members
 $cast_array = [];
-if (!empty($movie['cast_data'])) {
-  $cast_items = explode('||', $movie['cast_data']);
-  foreach ($cast_items as $item) {
-    $parts = explode('|', $item);
-    if (count($parts) >= 3) {
-      $cast_array[] = [
-        'name' => $parts[0],
-        'photo' => $parts[1],
-        'character' => $parts[2]
-      ];
-    }
+$sqlCast = "SELECT actor_name, actor_photo, character_name FROM cast_members WHERE movie_id = ?";
+$stmtCast = $conn->prepare($sqlCast);
+if ($stmtCast) {
+  $stmtCast->bind_param("i", $movie_id);
+  $stmtCast->execute();
+  $resultCast = $stmtCast->get_result();
+  while ($castRow = $resultCast->fetch_assoc()) {
+    $cast_array[] = [
+      'name' => $castRow['actor_name'],
+      'photo' => $castRow['actor_photo'],
+      'character' => $castRow['character_name'] ?? ''
+    ];
   }
+  $stmtCast->close();
 }
 $movie['cast_array'] = $cast_array;
 
@@ -420,7 +416,7 @@ $comments_result = $comments_stmt->get_result();
         </button>
         
         <?php if (!empty($movie['watchLink']) && $movie['watchLink'] !== '#'): ?>
-        <a href="<?php echo htmlspecialchars($movie['watchLink']); ?>" target="_blank" class="btn-action btn-primary" style="text-decoration: none;">
+        <a href="javascript:void(0)" onclick="startWatchRedirect(event, '<?php echo htmlspecialchars($movie['watchLink']); ?>')" class="btn-action btn-primary" style="text-decoration: none;">
           <i class="fas fa-film"></i> Tonton Film
         </a>
         <?php endif; ?>
