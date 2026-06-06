@@ -1,4 +1,39 @@
-<?php require_once 'config/config.php'; ?>
+<?php 
+require_once 'config/config.php';
+
+// Refresh data user dari DB secara real-time (profile photo + subscription)
+if (isset($_SESSION['user_id'])) {
+    $uid = (int)$_SESSION['user_id'];
+    $sql_live = "SELECT u.profile_photo, u.subscription_status, u.subscription_end, u.subscription_start,
+                        sp.name as subscription_plan_name
+                 FROM users u
+                 LEFT JOIN subscription_plans sp ON u.subscription_plan_id = sp.id
+                 WHERE u.id = ?";
+    $stmt_live = $conn->prepare($sql_live);
+    $stmt_live->bind_param("i", $uid);
+    $stmt_live->execute();
+    $live_data = $stmt_live->get_result()->fetch_assoc();
+    $stmt_live->close();
+
+    if ($live_data) {
+        // Sync profile photo
+        $_SESSION['profile_photo'] = $live_data['profile_photo'] ?? null;
+
+        // Auto-expire subscription jika sudah lewat tanggal
+        $sub_end = $live_data['subscription_end'];
+        if ($live_data['subscription_status'] === 'active' && !empty($sub_end) && strtotime($sub_end) < time()) {
+            $conn->query("UPDATE users SET subscription_status = 'expired' WHERE id = {$uid}");
+            $live_data['subscription_status'] = 'expired';
+        }
+
+        // Sync subscription ke session
+        $_SESSION['subscription_status']    = $live_data['subscription_status'] ?? 'none';
+        $_SESSION['subscription_end']       = $live_data['subscription_end'] ?? null;
+        $_SESSION['subscription_plan_name'] = $live_data['subscription_plan_name'] ?? null;
+    }
+}
+?>
+
 <!DOCTYPE html>
 <html lang="id">
 
@@ -122,8 +157,16 @@
                     <span class="detail-label">Subs End:</span>
                     <span class="detail-value">
                       <?php 
-                        if (isset($_SESSION['subscription_end']) && !empty($_SESSION['subscription_end'])) {
-                          echo date('d M Y', strtotime($_SESSION['subscription_end'])); 
+                        if (isset($_SESSION['subscription_end']) && !empty($_SESSION['subscription_end']) && $_SESSION['subscription_status'] === 'active') {
+                          $end_ts = strtotime($_SESSION['subscription_end']);
+                          $now_ts = time();
+                          $diff_days = (int)ceil(($end_ts - $now_ts) / 86400);
+                          echo date('d M Y', $end_ts);
+                          if ($diff_days > 0) {
+                            echo ' <span style="color:#ff9800;font-size:0.8rem;">(' . $diff_days . ' hari lagi)</span>';
+                          } elseif ($diff_days === 0) {
+                            echo ' <span style="color:#ff003c;font-size:0.8rem;">(Hari ini berakhir!)</span>';
+                          }
                         } else {
                           echo '-';
                         }

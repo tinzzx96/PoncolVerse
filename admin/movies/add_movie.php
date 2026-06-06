@@ -86,29 +86,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $characterNames = isset($_POST['character_names']) ? $_POST['character_names'] : [];
             
             foreach ($actorNames as $index => $actorName) {
-                if (!empty($actorName) && isset($_FILES['actor_photos']['name'][$index])) {
+                if (!empty($actorName)) {
                     $characterName = isset($characterNames[$index]) ? clean_input($characterNames[$index]) : '';
+                    $actorPhotoPath = '';
                     
-                    // Prepare file upload untuk aktor
-                    $actorFile = [
-                        'name' => $_FILES['actor_photos']['name'][$index],
-                        'type' => $_FILES['actor_photos']['type'][$index],
-                        'tmp_name' => $_FILES['actor_photos']['tmp_name'][$index],
-                        'error' => $_FILES['actor_photos']['error'][$index],
-                        'size' => $_FILES['actor_photos']['size'][$index]
-                    ];
-                    
-                    if ($actorFile['error'] === UPLOAD_ERR_OK) {
+                    // Prepare file upload jika ada foto baru yang diupload
+                    if (isset($_FILES['actor_photos']['name'][$index]) && $_FILES['actor_photos']['error'][$index] === UPLOAD_ERR_OK) {
+                        $actorFile = [
+                            'name' => $_FILES['actor_photos']['name'][$index],
+                            'type' => $_FILES['actor_photos']['type'][$index],
+                            'tmp_name' => $_FILES['actor_photos']['tmp_name'][$index],
+                            'error' => $_FILES['actor_photos']['error'][$index],
+                            'size' => $_FILES['actor_photos']['size'][$index]
+                        ];
+                        
                         $actorUpload = uploadFile($actorFile, 'actor');
                         if ($actorUpload['success']) {
                             $actorPhotoPath = $actorUpload['path'];
-                            $actorNameClean = clean_input($actorName);
-                            
-                            $sqlCast = "INSERT INTO cast_members (movie_id, actor_name, actor_photo, character_name) VALUES (?, ?, ?, ?)";
-                            $stmtCast = $conn->prepare($sqlCast);
-                            $stmtCast->bind_param("isss", $movieId, $actorNameClean, $actorPhotoPath, $characterName);
-                            $stmtCast->execute();
                         }
+                    }
+                    
+                    $actorNameClean = clean_input($actorName);
+                    $sqlCast = "INSERT INTO cast_members (movie_id, actor_name, actor_photo, character_name) VALUES (?, ?, ?, ?)";
+                    $stmtCast = $conn->prepare($sqlCast);
+                    if ($stmtCast) {
+                        $stmtCast->bind_param("isss", $movieId, $actorNameClean, $actorPhotoPath, $characterName);
+                        $stmtCast->execute();
+                        $stmtCast->close();
                     }
                 }
             }

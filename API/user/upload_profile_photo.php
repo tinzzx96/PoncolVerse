@@ -78,7 +78,7 @@ try {
             }
             
             // Update session
-            $_SESSION['user_profile_photo'] = $relative_path;
+            $_SESSION['profile_photo'] = $relative_path;
             
             echo json_encode([
                 'success' => true,
