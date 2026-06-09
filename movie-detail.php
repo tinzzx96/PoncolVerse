@@ -343,6 +343,201 @@ $comments_result = $comments_stmt->get_result();
       background: rgba(255, 0, 60, 0.8);
       transform: translateX(-5px);
     }
+
+    /* ===== FILM SERUPA ===== */
+    .similar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+    
+    .similar-card {
+        background: #121212;
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .similar-card:hover {
+        transform: translateY(-8px) scale(1.03);
+        border-color: rgba(255,0,60,0.4);
+        box-shadow: 0 12px 30px rgba(255,0,60,0.25);
+    }
+    
+    .similar-card img {
+        width: 100%;
+        height: 230px;
+        object-fit: cover;
+        display: block;
+    }
+    
+    .similar-card-info {
+        padding: 0.75rem;
+    }
+    
+    .similar-card-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.3rem;
+    }
+    
+    .similar-card-meta {
+        font-size: 0.8rem;
+        color: #aaa;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* ===== STAR RATING ===== */
+    .star-rating-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    
+    .star-rating-label {
+      color: #aaa;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+    
+    .star-rating-group {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .star-btn {
+      font-size: 1.4rem;
+      color: rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      transition: color 0.15s ease, transform 0.15s ease;
+      line-height: 1;
+    }
+    
+    .star-btn:hover,
+    .star-btn.hovered,
+    .star-btn.selected {
+      color: #ffc107;
+    }
+    
+    .star-btn:hover {
+      transform: scale(1.2);
+    }
+    
+    .star-rating-display {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #ffc107;
+      min-width: 80px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    
+    .star-rating-display.active {
+      opacity: 1;
+    }
+
+    /* ===== SPOILER TAG ===== */
+  .spoiler-checkbox-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .spoiler-checkbox-wrap input[type="checkbox"] {
+    display: none;
+  }
+  
+  .spoiler-toggle-box {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 145, 0, 0.5);
+    border-radius: 4px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  
+  .spoiler-checkbox-wrap input:checked + .spoiler-toggle-box {
+    background: #ff9100;
+    border-color: #ff9100;
+  }
+  
+  .spoiler-checkbox-wrap input:checked + .spoiler-toggle-box::after {
+    content: '✓';
+    font-size: 11px;
+    color: #000;
+    font-weight: 900;
+    line-height: 1;
+  }
+  
+  .spoiler-checkbox-label {
+    font-size: 0.85rem;
+    color: #ff9100;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  
+  .spoiler-checkbox-label i {
+    font-size: 0.8rem;
+  }
+  
+  /* ===== SPOILER COMMENT DISPLAY ===== */
+  .comment-item.is-spoiler .comment-body {
+    filter: blur(6px);
+    user-select: none;
+    cursor: pointer;
+    transition: filter 0.3s ease;
+    position: relative;
+  }
+  
+  .comment-item.is-spoiler .comment-body.revealed {
+    filter: none;
+    user-select: text;
+    cursor: default;
+  }
+  
+  .spoiler-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(255, 145, 0, 0.12);
+    border: 1px solid rgba(255, 145, 0, 0.35);
+    color: #ff9100;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.6rem;
+  }
+  
+  .spoiler-reveal-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(255, 145, 0, 0.7);
+    margin-top: 0.4rem;
+    font-style: italic;
+  }
+  
+  .comment-item.is-spoiler .spoiler-reveal-hint.hidden {
+    display: none;
+  }
   </style>
 </head>
 
@@ -416,7 +611,7 @@ $comments_result = $comments_stmt->get_result();
         </button>
         
         <?php if (!empty($movie['watchLink']) && $movie['watchLink'] !== '#'): ?>
-        <a href="javascript:void(0)" onclick="startWatchRedirect(event, '<?php echo htmlspecialchars($movie['watchLink']); ?>')" class="btn-action btn-primary" style="text-decoration: none;">
+        <a href="javascript:void(0)" (event, onclick="startWatchRedirect(event, '<?php echo htmlspecialchars($movie['watchLink']); ?>', <?php echo $movie_id; ?>)" class="btn-action btn-primary" style="text-decoration: none;">
           <i class="fas fa-film"></i> Tonton Film
         </a>
         <?php endif; ?>
@@ -467,6 +662,12 @@ $comments_result = $comments_stmt->get_result();
         </div>
       <?php endif; ?>
 
+            <!-- Film Serupa -->
+      <div id="similarMoviesSection" style="display:none;">
+          <h2 class="section-title">Film Serupa</h2>
+          <div class="similar-grid" id="similarGrid"></div>
+      </div>
+
       <div class="comments-section">
         <h2 class="section-title" style="margin-top: 0;">Komentar</h2>
 
@@ -475,27 +676,34 @@ $comments_result = $comments_stmt->get_result();
             <form id="commentForm">
               <textarea id="commentText" placeholder="Tulis komentar Anda..."></textarea>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                <div>
-                  <label style="color: #aaa; margin-right: 1rem;">Rating:</label>
-                  <select id="commentRating"
-                    style="padding: 0.5rem; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-radius: 5px; color: white;">
-                    <option value="">Pilih Rating</option>
-                    <option value="10">10 - Masterpiece</option>
-                    <option value="9">9 - Sangat Bagus</option>
-                    <option value="8">8 - Bagus</option>
-                    <option value="7">7 - Lumayan</option>
-                    <option value="6">6 - Cukup</option>
-                    <option value="5">5 - Biasa</option>
-                    <option value="4">4 - Kurang</option>
-                    <option value="3">3 - Buruk</option>
-                    <option value="2">2 - Sangat Buruk</option>
-                    <option value="1">1 - Terrible</option>
-                  </select>
+                <div class="star-rating-wrap">
+                  <span class="star-rating-label">Rating:</span>
+                  <div class="star-rating-group" id="starGroup">
+                    <i class="fas fa-star star-btn" data-val="1"></i>
+                    <i class="fas fa-star star-btn" data-val="2"></i>
+                    <i class="fas fa-star star-btn" data-val="3"></i>
+                    <i class="fas fa-star star-btn" data-val="4"></i>
+                    <i class="fas fa-star star-btn" data-val="5"></i>
+                    <i class="fas fa-star star-btn" data-val="6"></i>
+                    <i class="fas fa-star star-btn" data-val="7"></i>
+                    <i class="fas fa-star star-btn" data-val="8"></i>
+                    <i class="fas fa-star star-btn" data-val="9"></i>
+                    <i class="fas fa-star star-btn" data-val="10"></i>
+                  </div>
+                  <span class="star-rating-display" id="starDisplay">Pilih rating</span>
+                  <input type="hidden" id="commentRating" value="">
                 </div>
                 <button type="submit" class="btn-action btn-primary">
                   <i class="fas fa-paper-plane"></i> Kirim
                 </button>
               </div>
+              <label class="spoiler-checkbox-wrap" title="Centang jika komentar mengandung spoiler cerita">
+                <input type="checkbox" id="isSpoilerCheck">
+                <div class="spoiler-toggle-box"></div>
+                <span class="spoiler-checkbox-label">
+                  <i class="fas fa-exclamation-triangle"></i> Mengandung Spoiler
+                </span>
+              </label>
             </form>
           </div>
         <?php else: ?>
@@ -508,8 +716,9 @@ $comments_result = $comments_stmt->get_result();
           <?php
           if ($comments_result->num_rows > 0):
             while ($comment = $comments_result->fetch_assoc()):
-              ?>
-              <div class="comment-item">
+              $isSpoiler = !empty($comment['is_spoiler']) && $comment['is_spoiler'] == 1;
+          ?>
+              <div class="comment-item <?php echo $isSpoiler ? 'is-spoiler' : ''; ?>">
                 <div class="comment-header">
                   <span class="comment-author">
                     <?php echo htmlspecialchars($comment['firstName'] . ' ' . $comment['lastName']); ?>
@@ -518,19 +727,33 @@ $comments_result = $comments_stmt->get_result();
                     <?php echo date('d M Y, H:i', strtotime($comment['created_at'])); ?>
                   </span>
                 </div>
+
+                <?php if ($isSpoiler): ?>
+                  <div class="spoiler-badge">
+                    <i class="fas fa-exclamation-triangle"></i> SPOILER
+                  </div>
+                <?php endif; ?>
+
                 <?php if (!empty($comment['rating'])): ?>
                   <div style="color: #ff003c; margin-bottom: 0.5rem;">
                     <i class="fas fa-star"></i> <?php echo $comment['rating']; ?>/10
                   </div>
                 <?php endif; ?>
-                <p style="color: #ccc; line-height: 1.6;">
-                  <?php echo nl2br(htmlspecialchars($comment['comment'])); ?>
-                </p>
+
+                <div class="comment-body <?php echo $isSpoiler ? '' : 'revealed'; ?>"
+                    <?php echo $isSpoiler ? 'onclick="revealSpoiler(this)" title="Klik untuk lihat spoiler"' : ''; ?>>
+                  <p style="color: #ccc; line-height: 1.6;">
+                    <?php echo nl2br(htmlspecialchars($comment['comment'])); ?>
+                  </p>
+                  <?php if ($isSpoiler): ?>
+                    <span class="spoiler-reveal-hint">🔍 Klik untuk membaca spoiler</span>
+                  <?php endif; ?>
+                </div>
               </div>
-              <?php
+          <?php
             endwhile;
           else:
-            ?>
+          ?>
             <p style="color: #aaa; text-align: center; padding: 2rem;">
               Belum ada komentar. Jadilah yang pertama!
             </p>
@@ -623,6 +846,84 @@ $comments_result = $comments_stmt->get_result();
   </div>
 
   <script>
+
+        // ===== RECORD WATCH HISTORY =====
+    async function recordWatchHistory(movieId) {
+        try {
+            const formData = new FormData();
+            formData.append('movie_id', movieId);
+            await fetch('API/watchhistory/record_watch.php', {
+                method: 'POST',
+                body: formData
+            });
+        } catch (e) {
+            // silent fail — jangan ganggu user
+        }
+    }
+    
+    // ===== OVERRIDE startWatchRedirect agar catat history =====
+    // Fungsi ini menggantikan fungsi startWatchRedirect dari main.js
+    // Tambahkan movieId sebagai parameter ke-3
+    function startWatchRedirect(event, link, movieId) {
+        if (event) event.preventDefault();
+    
+        // Catat history jika ada movieId
+        if (movieId) recordWatchHistory(movieId);
+    
+        let redirectModal = document.getElementById('watchRedirectModal');
+        if (!redirectModal) {
+            redirectModal = document.createElement('div');
+            redirectModal.id = 'watchRedirectModal';
+            redirectModal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);backdrop-filter:blur(15px);display:flex;justify-content:center;align-items:center;z-index:99999;opacity:0;transition:opacity 0.4s ease;';
+            redirectModal.innerHTML = `
+              <div style="background:linear-gradient(135deg,rgba(26,26,26,0.95),rgba(15,15,15,0.95));border:2px solid rgba(255,0,60,0.3);border-radius:20px;padding:3rem;max-width:450px;width:90%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.8);transform:scale(0.9);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);" id="watchRedirectContent">
+                <div id="watchRedirectSpinner" style="margin-bottom:2rem;">
+                  <div style="width:70px;height:70px;border:5px solid rgba(255,0,60,0.1);border-top:5px solid #ff003c;border-radius:50%;margin:0 auto;animation:watchSpin 1s linear infinite;box-shadow:0 0 15px rgba(255,0,60,0.4);"></div>
+                </div>
+                <h2 style="font-family:'Orbitron',sans-serif;font-size:1.8rem;margin-bottom:1rem;background:linear-gradient(135deg,#ff003c,#ff4d7a);-webkit-background-clip:text;background-clip:text;color:transparent;" id="watchRedirectTitle">Menghubungkan ke Server</h2>
+                <p style="color:#ccc;font-size:1.1rem;line-height:1.6;" id="watchRedirectText">Mohon tunggu sebentar...</p>
+              </div>`;
+            const style = document.createElement('style');
+            style.innerHTML = '@keyframes watchSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}';
+            document.head.appendChild(style);
+            document.body.appendChild(redirectModal);
+        }
+    
+        const content = document.getElementById('watchRedirectContent');
+        const spinner = document.getElementById('watchRedirectSpinner');
+        const title   = document.getElementById('watchRedirectTitle');
+        const text    = document.getElementById('watchRedirectText');
+    
+        spinner.style.display = 'block';
+        title.innerText = 'Menghubungkan ke Server';
+        text.innerText  = 'Mohon tunggu sebentar...';
+    
+        redirectModal.style.display = 'flex';
+        redirectModal.offsetHeight;
+        redirectModal.style.opacity = '1';
+        content.style.transform = 'scale(1)';
+        document.body.style.overflow = 'hidden';
+    
+        setTimeout(() => {
+            spinner.style.display = 'none';
+            title.innerText = 'Mempersiapkan Pemutar';
+            let countdown = 3;
+            text.innerHTML = `Segera Diarahkan Ke link Nonton Pada: <strong style="color:#ff003c;font-size:1.3rem;">${countdown}</strong> detik`;
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    text.innerHTML = `Segera Diarahkan Ke link Nonton Pada: <strong style="color:#ff003c;font-size:1.3rem;">${countdown}</strong> detik`;
+                } else {
+                    clearInterval(interval);
+                    redirectModal.style.opacity = '0';
+                    content.style.transform = 'scale(0.9)';
+                    setTimeout(() => { redirectModal.style.display = 'none'; document.body.style.overflow = ''; }, 400);
+                    window.open(link, '_blank');
+                }
+            }, 1000);
+        }, 3000);
+    }
+    
     // Watchlist & Share Functions
     let currentShareMovieId = <?php echo $movie_id; ?>;
     let currentShareMovieTitle = '<?php echo addslashes($movie['title']); ?>';
@@ -826,6 +1127,47 @@ $comments_result = $comments_stmt->get_result();
 
   <!-- Share Modal & Trailer Modal udah ada, tambah Watchlist Script -->
   <script src="assets/js/main.js"></script>
+
+    <script>
+  // ===== LOAD FILM SERUPA =====
+  async function loadSimilarMovies() {
+      const genre = '<?php echo addslashes(json_encode($genre_array)); ?>';
+      const movieId = <?php echo $movie_id; ?>;
+  
+      try {
+          const res = await fetch(`API/movies/get_similar_movies.php?movie_id=${movieId}&genre=${encodeURIComponent(genre)}`);
+          const movies = await res.json();
+  
+          if (!movies || movies.length === 0) return;
+  
+          const section = document.getElementById('similarMoviesSection');
+          const grid    = document.getElementById('similarGrid');
+  
+          grid.innerHTML = movies.map(m => `
+              <div class="similar-card" onclick="window.location.href='movie-detail.php?id=${m.id}'">
+                  <img src="${m.poster}" alt="${m.title}" loading="lazy"
+                      onerror="this.src='https://via.placeholder.com/160x230?text=No+Image'">
+                  <div class="similar-card-info">
+                      <div class="similar-card-title">${m.title}</div>
+                      <div class="similar-card-meta">
+                          <span>⭐ ${m.rating}</span>
+                          <span>${m.year}</span>
+                      </div>
+                  </div>
+              </div>
+          `).join('');
+  
+          section.style.display = 'block';
+  
+      } catch (e) {
+          console.error('Error loading similar movies:', e);
+      }
+  }
+  
+  // Jalankan saat page load
+  window.addEventListener('load', loadSimilarMovies);
+  </script>
+
   <script>
     // Load watchlist count for navbar
     loadWatchlistCount();
@@ -845,7 +1187,78 @@ $comments_result = $comments_stmt->get_result();
       document.body.style.overflow = '';
     }
 
-    // Comment form handler
+      // ===== STAR RATING LOGIC =====
+  (function() {
+      const stars   = document.querySelectorAll('.star-btn');
+      const display = document.getElementById('starDisplay');
+      const hidden  = document.getElementById('commentRating');
+  
+      const labels = {
+          1:'1 — Terrible', 2:'2 — Sangat Buruk', 3:'3 — Buruk',
+          4:'4 — Kurang',   5:'5 — Biasa',        6:'6 — Cukup',
+          7:'7 — Lumayan',  8:'8 — Bagus',         9:'9 — Sangat Bagus',
+          10:'10 — Masterpiece'
+      };
+  
+      let currentVal = 0;
+  
+      function paintStars(upTo) {
+          stars.forEach(s => {
+              const v = parseInt(s.dataset.val);
+              if (v <= upTo) {
+                  s.classList.add('hovered');
+              } else {
+                  s.classList.remove('hovered');
+              }
+          });
+      }
+  
+      stars.forEach(star => {
+          // Hover masuk
+          star.addEventListener('mouseenter', () => {
+              const v = parseInt(star.dataset.val);
+              paintStars(v);
+              display.textContent = labels[v];
+              display.classList.add('active');
+          });
+  
+          // Hover keluar — kembalikan ke selected
+          star.addEventListener('mouseleave', () => {
+              paintStars(currentVal);
+              display.textContent = currentVal ? labels[currentVal] : 'Pilih rating';
+              if (!currentVal) display.classList.remove('active');
+          });
+  
+          // Klik — set nilai
+          star.addEventListener('click', () => {
+              const v = parseInt(star.dataset.val);
+  
+              // Klik bintang yang sama → reset (toggle off)
+              if (currentVal === v) {
+                  currentVal = 0;
+                  hidden.value = '';
+                  paintStars(0);
+                  display.textContent = 'Pilih rating';
+                  display.classList.remove('active');
+                  stars.forEach(s => s.classList.remove('selected'));
+                  return;
+              }
+  
+              currentVal = v;
+              hidden.value = v;
+              paintStars(v);
+              display.textContent = labels[v];
+              display.classList.add('active');
+  
+              // Tandai selected
+              stars.forEach(s => {
+                  s.classList.toggle('selected', parseInt(s.dataset.val) <= v);
+              });
+          });
+      });
+  })();
+
+   // Comment form handler
     document.getElementById('commentForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -853,7 +1266,7 @@ $comments_result = $comments_stmt->get_result();
       const rating = document.getElementById('commentRating').value;
 
       if (!comment) {
-        alert('Komentar tidak boleh kosong!');
+        showToast('error', 'Komentar Kosong', 'Komentar tidak boleh kosong!');
         return;
       }
 
@@ -871,14 +1284,14 @@ $comments_result = $comments_stmt->get_result();
         const result = await response.json();
 
         if (result.success) {
-          alert('Komentar berhasil ditambahkan!');
-          location.reload();
+          showToast('success', 'Berhasil! 🎉', 'Komentar berhasil ditambahkan!');
+          setTimeout(() => location.reload(), 1500);
         } else {
-          alert('Gagal menambahkan komentar: ' + result.message);
+          showToast('error', 'Gagal', 'Gagal menambahkan komentar: ' + result.message);
         }
       } catch (error) {
         console.error('Error:', error);
-        alert('Terjadi kesalahan. Silakan coba lagi.');
+        showToast('error', 'Error', 'Terjadi kesalahan. Silakan coba lagi.');
       }
     });
   </script>

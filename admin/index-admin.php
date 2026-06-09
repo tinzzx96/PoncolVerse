@@ -26,6 +26,9 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
   <header class="admin-header">
     <h1>PoncolVerse - Admin Panel</h1>
     <p>Kelola koleksi film Anda dengan mudah</p>
+    <a href="dashboard/index.php" class="dashboard-btn">
+      <i class="fas fa-chart-line"></i> Dashboard
+    </a>
   </header>
   <button class="add-movie-btn" onclick="openAddModal()"><i class="fas fa-plus"></i> Tambah Film Baru</button>
   <div class="movies-table">
@@ -44,6 +47,25 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
         <tr><td colspan="6" class="no-data">Memuat data film...</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="featured-panel">
+    <div class="featured-panel-header">
+      <h2><i class="fas fa-fire"></i> Film Populer</h2>
+      <span class="featured-count-badge" id="featuredCountBadge">0 / 20</span>
+  </div>
+  <p class="featured-panel-desc">Pilih film yang tampil di section "Film Populer Hari Ini" di halaman utama.</p>
+
+  <div class="featured-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" id="featuredSearch" placeholder="Cari judul film..." oninput="filterFeaturedList()">
+  </div>
+
+  <div class="featured-grid" id="featuredGrid">
+    <div style="color:#aaa;padding:2rem;text-align:center;">
+        <div class="spinner"></div> Memuat...
+      </div>
+    </div>
   </div>
 </div>
 

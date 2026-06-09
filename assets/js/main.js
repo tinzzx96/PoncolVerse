@@ -1115,3 +1115,59 @@ function startWatchRedirect(event, link) {
   }, 3000);
 }
 
+// ===== HISTORY FUNCTIONS =====
+async function openHistory() {
+    const modal = document.getElementById('historyModal');
+    if (!modal) return;
+ 
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+ 
+    const grid = document.getElementById('historyGrid');
+    grid.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat riwayat...</div>';
+ 
+    try {
+        const res    = await fetch('API/watchhistory/get_watch_history.php');
+        const movies = await res.json();
+ 
+        if (!movies || movies.length === 0) {
+            grid.innerHTML = '<div class="no-movies">Belum ada riwayat nonton. Klik "Tonton Film" untuk mulai!</div>';
+            return;
+        }
+ 
+        grid.innerHTML = movies.map(m => {
+            // Format tanggal watched_at
+            const date = new Date(m.watched_at);
+            const dateStr = date.toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' });
+ 
+            return `
+            <div class="watchlist-item" onclick="window.location.href='movie-detail.php?id=${m.id}'">
+                <img src="${m.poster}" alt="${m.title}"
+                     onerror="this.src='https://via.placeholder.com/200x300?text=No+Image'">
+                <div class="watchlist-item-info">
+                    <div class="watchlist-item-title">${m.title}</div>
+                    <div class="watchlist-item-meta">
+                        <span>⭐ ${m.rating}</span>
+                        <span>${m.year}</span>
+                    </div>
+                    <div style="font-size:0.75rem;color:#888;margin-top:0.3rem;">
+                        <i class="fas fa-clock" style="margin-right:3px;"></i>${dateStr}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+ 
+    } catch (e) {
+        console.error('Error loading history:', e);
+        grid.innerHTML = '<div class="no-movies">Gagal memuat riwayat. Silakan coba lagi.</div>';
+    }
+}
+ 
+function closeHistory() {
+    const modal = document.getElementById('historyModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
