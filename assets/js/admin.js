@@ -285,3 +285,113 @@ document
 window.addEventListener("load", () => {
   loadMovies();
 });
+
+// ── FEATURED PANEL JS ──
+let featuredAllMovies = [];
+ 
+async function loadFeaturedPanel() {
+  try {
+    const res  = await fetch('movies/manage_featured.php?action=get_all');
+    const data = await res.json();
+    if (!data.success) return;
+ 
+    featuredAllMovies = data.movies;
+    renderFeaturedGrid(featuredAllMovies);
+    updateFeaturedBadge();
+  } catch (e) {
+    console.error('Error loading featured panel:', e);
+  }
+}
+ 
+function updateFeaturedBadge() {
+  const count = featuredAllMovies.filter(m => m.is_featured).length;
+  const el = document.getElementById('featuredCountBadge');
+  if (el) el.textContent = count + ' / 20';
+}
+ 
+function renderFeaturedGrid(movies) {
+  const grid = document.getElementById('featuredGrid');
+  if (!movies || movies.length === 0) {
+    grid.innerHTML = '<p style="color:#aaa;text-align:center;padding:2rem;grid-column:1/-1;">Belum ada film.</p>';
+    return;
+  }
+ 
+  grid.innerHTML = movies.map(m => `
+    <div class="f-card ${m.is_featured ? 'is-featured' : ''}"
+         onclick="toggleFeatured(${m.id}, ${m.is_featured})"
+         id="fcard-${m.id}"
+         title="${m.is_featured ? 'Klik untuk hapus dari Film Populer' : 'Klik untuk tambah ke Film Populer'}">
+      <img src="${m.poster}"
+           alt="${m.title}"
+           onerror="this.src='https://via.placeholder.com/150x200?text=No+Image'">
+      <div class="f-card-badge ${m.is_featured ? 'on' : 'off'}">
+        ${m.is_featured ? '★ Populer' : '+ Tambah'}
+      </div>
+      <div class="f-card-info">
+        <div class="f-card-title">${m.title}</div>
+        <div class="f-card-meta">
+          <span>⭐ ${m.rating}</span>
+          <span>${m.year}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+ 
+async function toggleFeatured(movieId, isFeatured) {
+  const action = isFeatured ? 'remove' : 'add';
+  const label  = isFeatured ? 'Menghapus...' : 'Menambahkan...';
+ 
+  showToast('info', label, 'Mohon tunggu');
+ 
+  try {
+    const formData = new FormData();
+    formData.append('action', action);
+    formData.append('movie_id', movieId);
+ 
+    const res  = await fetch('movies/manage_featured.php', { method: 'POST', body: formData });
+    const data = await res.json();
+ 
+    if (data.success) {
+      showToast('success', 'Berhasil!', data.message);
+ 
+      // Update local state
+      const idx = featuredAllMovies.findIndex(m => m.id === movieId);
+      if (idx !== -1) {
+        featuredAllMovies[idx].is_featured = isFeatured ? 0 : 1;
+      }
+ 
+      // Re-render card saja (tidak reload semua)
+      const card = document.getElementById('fcard-' + movieId);
+      if (card) {
+        const newFeatured = !isFeatured;
+        card.className = 'f-card' + (newFeatured ? ' is-featured' : '');
+        card.title     = newFeatured ? 'Klik untuk hapus dari Film Populer' : 'Klik untuk tambah ke Film Populer';
+        card.onclick   = () => toggleFeatured(movieId, newFeatured);
+        card.querySelector('.f-card-badge').className = 'f-card-badge ' + (newFeatured ? 'on' : 'off');
+        card.querySelector('.f-card-badge').textContent = newFeatured ? '★ Populer' : '+ Tambah';
+      }
+ 
+      updateFeaturedBadge();
+    } else {
+      showToast('error', 'Gagal', data.message);
+    }
+  } catch (e) {
+    showToast('error', 'Error', 'Terjadi kesalahan. Coba lagi.');
+  }
+}
+ 
+function filterFeaturedList() {
+  const q = document.getElementById('featuredSearch').value.toLowerCase().trim();
+  if (!q) {
+    renderFeaturedGrid(featuredAllMovies);
+    return;
+  }
+  const filtered = featuredAllMovies.filter(m => m.title.toLowerCase().includes(q));
+  renderFeaturedGrid(filtered);
+}
+ 
+// Load saat halaman siap
+window.addEventListener('load', () => {
+  loadFeaturedPanel();
+});

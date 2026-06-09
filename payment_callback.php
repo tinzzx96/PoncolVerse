@@ -31,25 +31,25 @@ if (!$transaction) {
     exit;
 }
 
-// Verifikasi status ke Midtrans API (lebih reliable dari GET param)
-$midtrans_status = getMidtransTransactionStatus($order_id);
+// Verifikasi status ke Midtrans API
+$midtrans_status    = getMidtransTransactionStatus($order_id);
 $transaction_status = $midtrans_status['transaction_status'] ?? 'unknown';
-$fraud_status = $midtrans_status['fraud_status'] ?? 'accept';
+$fraud_status       = $midtrans_status['fraud_status'] ?? 'accept';
 
 // Tentukan apakah payment berhasil
-$is_success = ($transaction_status === 'settlement') || 
+$is_success = ($transaction_status === 'settlement') ||
               ($transaction_status === 'capture' && $fraud_status === 'accept') ||
               ($transaction_status === 'capture' && $fraud_status === 'challenge');
 
 // Fallback: jika Midtrans API tidak bisa diakses, percaya GET param
 if (!$midtrans_status) {
-    $status_param = $_GET['status'] ?? 'unknown';
-    $is_success = ($status_param === 'success');
+    $status_param       = $_GET['status'] ?? 'unknown';
+    $is_success         = ($status_param === 'success');
     $transaction_status = $is_success ? 'settlement' : $status_param;
 }
 
 $start_date = '';
-$end_date = '';
+$end_date   = '';
 
 if ($is_success && $transaction['transaction_status'] !== 'settlement') {
     // Update transaction status
@@ -57,15 +57,15 @@ if ($is_success && $transaction['transaction_status'] !== 'settlement') {
     $stmt_update = $conn->prepare($sql_update);
     $stmt_update->bind_param("s", $order_id);
     $stmt_update->execute();
-    
+
     // Activate subscription
-    $user_id = $transaction['user_id'];
-    $plan_id = $transaction['subscription_plan_id'];
+    $user_id       = $transaction['user_id'];
+    $plan_id       = $transaction['subscription_plan_id'];
     $duration_days = $transaction['duration_days'];
-    
+
     $start_date = date('Y-m-d');
-    $end_date = date('Y-m-d', strtotime("+{$duration_days} days"));
-    
+    $end_date   = date('Y-m-d', strtotime("+{$duration_days} days"));
+
     $sql_user = "UPDATE users 
                  SET subscription_plan_id = ?, 
                      subscription_start = ?, 
@@ -75,55 +75,53 @@ if ($is_success && $transaction['transaction_status'] !== 'settlement') {
     $stmt_user = $conn->prepare($sql_user);
     $stmt_user->bind_param("issi", $plan_id, $start_date, $end_date, $user_id);
     $stmt_user->execute();
-    
-    // Update session supaya tampil langsung tanpa re-login
+
+    // Update session
     if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user_id) {
-        $_SESSION['subscription_status'] = 'active';
-        $_SESSION['subscription_end'] = $end_date;
+        $_SESSION['subscription_status']    = 'active';
+        $_SESSION['subscription_end']       = $end_date;
         $_SESSION['subscription_plan_name'] = $transaction['plan_name'];
     }
-    
-    $message = 'Pembayaran berhasil! Subscription Anda sudah aktif.';
+
+    $message     = 'Pembayaran berhasil! Subscription Anda sudah aktif.';
     $status_icon = 'fa-check-circle';
     $status_color = '#00ff88';
 
 } elseif ($is_success && $transaction['transaction_status'] === 'settlement') {
-    // Already processed, just read existing data
-    $end_date = $transaction['subscription_end'] ?? '';
-    
-    // Re-fetch from DB for accurate subscription_end
-    $sql_re = "SELECT subscription_end, subscription_status, subscription_plan_id FROM users WHERE id = ?";
-    $stmt_re = $conn->prepare($sql_re);
+    // Already processed — baca data existing
+    $sql_re    = "SELECT subscription_end, subscription_status FROM users WHERE id = ?";
+    $stmt_re   = $conn->prepare($sql_re);
     $stmt_re->bind_param("i", $transaction['user_id']);
     $stmt_re->execute();
     $user_data = $stmt_re->get_result()->fetch_assoc();
-    $end_date = $user_data['subscription_end'] ?? $end_date;
-    
+    $end_date  = $user_data['subscription_end'] ?? '';
+
     // Refresh session
     if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $transaction['user_id']) {
-        $_SESSION['subscription_status'] = 'active';
-        $_SESSION['subscription_end'] = $end_date;
+        $_SESSION['subscription_status']    = 'active';
+        $_SESSION['subscription_end']       = $end_date;
         $_SESSION['subscription_plan_name'] = $transaction['plan_name'];
     }
-    
-    $message = 'Pembayaran berhasil! Subscription Anda sudah aktif.';
-    $status_icon = 'fa-check-circle';
+
+    $message      = 'Pembayaran berhasil! Subscription Anda sudah aktif.';
+    $status_icon  = 'fa-check-circle';
     $status_color = '#00ff88';
 
 } elseif ($transaction_status === 'pending') {
-    $message = 'Pembayaran Anda sedang diproses. Silakan selesaikan pembayaran.';
-    $status_icon = 'fa-clock';
+    $message      = 'Pembayaran Anda sedang diproses. Silakan selesaikan pembayaran.';
+    $status_icon  = 'fa-clock';
     $status_color = '#ff9800';
+
 } else {
-    $message = 'Pembayaran gagal atau dibatalkan. Silakan coba lagi.';
-    $status_icon = 'fa-times-circle';
+    $message      = 'Pembayaran gagal atau dibatalkan. Silakan coba lagi.';
+    $status_icon  = 'fa-times-circle';
     $status_color = '#ff003c';
-    
+
     // Update transaction status jika gagal
     if (!in_array($transaction['transaction_status'], ['settlement', 'capture'])) {
         $fail_status = $transaction_status === 'expire' ? 'expire' : 'failure';
-        $sql_fail = "UPDATE transactions SET transaction_status = ?, updated_at = NOW() WHERE order_id = ?";
-        $stmt_fail = $conn->prepare($sql_fail);
+        $sql_fail    = "UPDATE transactions SET transaction_status = ?, updated_at = NOW() WHERE order_id = ?";
+        $stmt_fail   = $conn->prepare($sql_fail);
         $stmt_fail->bind_param("ss", $fail_status, $order_id);
         $stmt_fail->execute();
     }
@@ -174,6 +172,7 @@ if ($is_success && $transaction['transaction_status'] !== 'settlement') {
       font-family: 'Orbitron', sans-serif;
       font-size: 2rem;
       margin-bottom: 1rem;
+      color: <?php echo $status_color; ?>;
     }
     .message {
       font-size: 1.1rem;
@@ -221,32 +220,38 @@ if ($is_success && $transaction['transaction_status'] !== 'settlement') {
     <div class="status-icon">
       <i class="fas <?php echo $status_icon; ?>"></i>
     </div>
-    
-    <h1><?php echo $status === 'success' ? 'Pembayaran Berhasil!' : ($status === 'pending' ? 'Menunggu Pembayaran' : 'Pembayaran Gagal'); ?></h1>
-    
+
+    <h1>
+      <?php
+        if ($is_success) echo 'Pembayaran Berhasil!';
+        elseif ($transaction_status === 'pending') echo 'Menunggu Pembayaran';
+        else echo 'Pembayaran Gagal';
+      ?>
+    </h1>
+
     <p class="message"><?php echo $message; ?></p>
-    
+
     <div class="order-details">
       <div class="detail-row">
         <span class="detail-label">Order ID:</span>
-        <span class="detail-value"><?php echo $order_id; ?></span>
+        <span class="detail-value"><?php echo htmlspecialchars($order_id); ?></span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Paket:</span>
-        <span class="detail-value"><?php echo $transaction['plan_name']; ?></span>
+        <span class="detail-value"><?php echo htmlspecialchars($transaction['plan_name']); ?></span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Total:</span>
         <span class="detail-value">Rp<?php echo number_format($transaction['gross_amount'], 0, ',', '.'); ?></span>
       </div>
-      <?php if ($status === 'success'): ?>
+      <?php if ($is_success && !empty($end_date)): ?>
       <div class="detail-row">
         <span class="detail-label">Berlaku Hingga:</span>
         <span class="detail-value"><?php echo date('d M Y', strtotime($end_date)); ?></span>
       </div>
       <?php endif; ?>
     </div>
-    
+
     <a href="index.php" class="back-btn">
       <i class="fas fa-home"></i> Kembali ke Beranda
     </a>
