@@ -79,6 +79,7 @@ if (count($hero_movies) >= 9) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
   <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
   <style>
     /* =============================================
        HERO SECTION — NEW DESIGN
@@ -679,6 +680,9 @@ if (count($hero_movies) >= 9) {
     </ul>
 
     <div class="nav-actions">
+      <button class="burger-btn" onclick="openDrawer()" aria-label="Menu">
+        <i class="fas fa-bars"></i>
+      </button>
       <div class="search-container">
         <i class="fas fa-search search-icon"></i>
         <input type="text" class="search-input" id="searchInput" placeholder="Cari film...">
@@ -778,6 +782,115 @@ if (count($hero_movies) >= 9) {
       </div>
     </div>
   </nav>
+
+  </nav>
+
+  <!-- ── MOBILE DRAWER ── -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="mobile-drawer" id="mobileDrawer">
+  
+    <div class="drawer-header">
+      <span class="drawer-logo">PoncolVerse</span>
+      <button class="drawer-close" onclick="closeDrawer()">&#x2715;</button>
+    </div>
+
+    <!-- Search -->
+    <div class="drawer-search">
+      <div class="drawer-search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" class="drawer-search-input" id="drawerSearchInput" placeholder="Cari film...">
+      </div>
+    </div>
+
+    <!-- Nav Links -->
+    <div class="drawer-nav">
+      <a href="#beranda" class="drawer-nav-item" onclick="closeDrawer()">
+        <i class="fas fa-home"></i> Beranda
+      </a>
+      <a href="#film" class="drawer-nav-item" onclick="closeDrawer()">
+        <i class="fas fa-fire"></i> Film Populer
+      </a>
+      <a href="#semua-film" class="drawer-nav-item" onclick="closeDrawer()">
+        <i class="fas fa-film"></i> Semua Film
+      </a>
+      <?php if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'): ?>
+      <a href="#paket" class="drawer-nav-item" onclick="closeDrawer()">
+        <i class="fas fa-crown"></i> Paket
+      </a>
+      <?php endif; ?>
+      <a href="#tentang" class="drawer-nav-item" onclick="closeDrawer()">
+        <i class="fas fa-info-circle"></i> Tentang
+      </a>
+
+      <!-- Genre dropdown -->
+      <button class="drawer-genre-toggle" onclick="toggleDrawerGenre(this)">
+        <span><i class="fas fa-tags" style="margin-right:0.6rem;color:#666;font-size:0.95rem;"></i>Genre</span>
+        <i class="fas fa-chevron-down chevron"></i>
+      </button>
+      <div class="drawer-genre-list" id="drawerGenreList">
+        <?php
+        $genres = ['Action','Adventure','Sci-Fi','Drama','Fantasy','Comedy','Horror','Romance','Thriller','Crime','Mystery','Animation'];
+        foreach ($genres as $g):
+        ?>
+        <button class="drawer-genre-item" onclick="filterAllMoviesByGenre('<?php echo $g; ?>'); closeDrawer(); document.getElementById('semua-film').scrollIntoView({behavior:'smooth'});">
+          <?php echo $g; ?>
+        </button>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <!-- User section -->
+    <div class="drawer-user-section">
+      <div class="drawer-user-card">
+        <div class="drawer-avatar">
+          <?php if (!empty($_SESSION['profile_photo'])): ?>
+            <img src="<?php echo $_SESSION['profile_photo']; ?>" alt="Profile">
+          <?php else: ?>
+            <?php echo strtoupper(substr($_SESSION['user_firstName'], 0, 1) . substr($_SESSION['user_lastName'], 0, 1)); ?>
+          <?php endif; ?>
+        </div>
+        <div class="drawer-user-info">
+          <strong><?php echo $_SESSION['user_firstName'] . ' ' . $_SESSION['user_lastName']; ?></strong>
+          <span><?php echo $_SESSION['user_email']; ?></span>
+          <?php if (isset($_SESSION['subscription_status']) && $_SESSION['subscription_status'] === 'active'): ?>
+            <div class="drawer-subs-badge"><?php echo $_SESSION['subscription_plan_name'] ?? 'Active'; ?></div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="drawer-nav" style="padding:0;border:none;">
+        <?php if ($_SESSION['user_role'] === 'admin'): ?>
+        <a href="admin/index-admin.php" class="drawer-nav-item admin-item">
+          <i class="fas fa-cog"></i> Admin Panel
+        </a>
+        <?php endif; ?>
+        <button class="drawer-nav-item" onclick="openWatchlist(); closeDrawer();">
+          <i class="fas fa-bookmark"></i> Watchlist
+        </button>
+        <button class="drawer-nav-item" onclick="openHistory(); closeDrawer();">
+          <i class="fas fa-history"></i> Riwayat Nonton
+        </button>
+        <button class="drawer-nav-item" onclick="openPhotoUpload(); closeDrawer();">
+          <i class="fas fa-camera"></i> Ganti Foto Profil
+        </button>
+      </div>
+
+      <a href="auth/logout.php" class="drawer-logout">
+        <i class="fas fa-sign-out-alt"></i> Keluar
+      </a>
+    </div>
+
+    <?php else: ?>
+    <!-- Guest -->
+    <button class="drawer-login-btn" onclick="openLogin(); closeDrawer();">
+      Login ke PoncolVerse
+    </button>
+    <?php endif; ?>
+
+  </div>
+  <!-- END MOBILE DRAWER -->
 
   <!-- =============================================
        HERO SECTION — NEW DESIGN
@@ -988,12 +1101,12 @@ if (count($hero_movies) >= 9) {
             </div>
             <div class="stat-card" data-aos="zoom-in" data-aos-delay="200">
               <div class="stat-icon"><i class="fas fa-users"></i></div>
-              <div class="stat-number" data-count="50000">0</div>
+              <div class="stat-number" data-count="5000">0</div>
               <div class="stat-label">Pengguna Aktif</div>
             </div>
             <div class="stat-card" data-aos="zoom-in" data-aos-delay="300">
-              <div class="stat-icon"><i class="fas fa-star"></i></div>
-              <div class="stat-number" data-count="4.9">0</div>
+              <div class="stat-icon"><i class="far fa-star"></i></i></div>
+              <div class="stat-number" data-count="4.6">0</div>
               <div class="stat-label">Rating Platform</div>
             </div>
           </div>
@@ -1011,7 +1124,7 @@ if (count($hero_movies) >= 9) {
           </div>
           <div class="about-features-grid">
             <div class="feature-card" data-aos="flip-left" data-aos-delay="100">
-              <div class="feature-card-icon"><i class="fas fa-hd-video"></i></div>
+              <div class="feature-card-icon"><i class="fas fa-film"></i></div>
               <h3 class="feature-card-title">Kualitas HD & 4K</h3>
               <p class="feature-card-desc">Nikmati film dengan kualitas gambar terbaik hingga 4K resolution</p>
             </div>
@@ -1049,11 +1162,11 @@ if (count($hero_movies) >= 9) {
     </div>
     <?php
     $testimonials_sql = "SELECT wt.*, u.firstName, u.lastName 
-                         FROM website_testimonials wt
-                         LEFT JOIN users u ON wt.user_id = u.id
-                         WHERE wt.is_approved = 1
-                         ORDER BY wt.created_at DESC
-                         LIMIT 10";
+                          FROM website_testimonials wt
+                          LEFT JOIN users u ON wt.user_id = u.id
+                          WHERE wt.is_approved = 1
+                          ORDER BY wt.created_at DESC
+                          LIMIT 10";
     $testimonials_result = $conn->query($testimonials_sql);
     $testimonials = [];
     if ($testimonials_result && $testimonials_result->num_rows > 0) {
@@ -1324,6 +1437,9 @@ if (count($hero_movies) >= 9) {
           <button class="share-social-btn twitter" onclick="shareToTwitter()">
             <i class="fab fa-twitter"></i> Twitter
           </button>
+          <button class="share-social-btn story" onclick="openStoryFromShare()">
+            <i class="fas fa-image"></i> Story Card
+          </button>
         </div>
       </div>
     </div>
@@ -1367,6 +1483,38 @@ if (count($hero_movies) >= 9) {
 
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   <script src="assets/js/main.js"></script>
+
+  <script>
+  // ── MOBILE DRAWER ──
+  function openDrawer() {
+    document.getElementById('mobileDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    document.getElementById('mobileDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function toggleDrawerGenre(btn) {
+    btn.classList.toggle('open');
+    document.getElementById('drawerGenreList').classList.toggle('open');
+  }
+
+  // Drawer search — mirror ke main search & trigger scroll
+  document.getElementById('drawerSearchInput').addEventListener('input', function(e) {
+    const val = e.target.value;
+    const mainInput = document.getElementById('searchInput');
+    if (mainInput) {
+      mainInput.value = val;
+      mainInput.dispatchEvent(new Event('input'));
+    }
+    if (val.trim().length >= 2) closeDrawer();
+  });
+
+  // Close drawer on ESC
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+  </script>
 
   <!-- History JS (dari fitur patch sebelumnya) -->
   <script>

@@ -32,6 +32,16 @@ function scrollToMovies() {
 async function loadPopularMovies() {
   const grid = document.getElementById("movieGrid");
   if (!grid) return;
+
+  grid.innerHTML = Array(6).fill(0).map(() => `
+    <div class="movie-card skeleton-card">
+      <div class="skeleton-poster"></div>
+      <div class="skeleton-info">
+        <div class="skeleton-line wide"></div>
+        <div class="skeleton-line narrow"></div>
+      </div>
+    </div>
+  `).join("");
   
   try {
     const response = await fetch("API/movies/get_popular_movies.php");
@@ -47,6 +57,17 @@ async function loadPopularMovies() {
 async function loadAllMovies() {
   const grid = document.getElementById("allMoviesGrid");
   if (!grid) return;
+
+  // Skeleton
+  grid.innerHTML = Array(8).fill(0).map(() => `
+    <div class="movie-card skeleton-card">
+      <div class="skeleton-poster"></div>
+      <div class="skeleton-info">
+        <div class="skeleton-line wide"></div>
+        <div class="skeleton-line narrow"></div>
+      </div>
+    </div>
+  `).join("");
   
   try {
     const response = await fetch("API/movies/get_all_movies.php");
@@ -72,7 +93,7 @@ function renderPopularMovies(movies) {
   grid.innerHTML = movies.map(movie => createMovieCard(movie)).join("");
 }
 
-function renderAllMovies(movies) {
+function renderAllMovies(movies, autoScroll = false) {
   const grid = document.getElementById("allMoviesGrid");
   if (!grid) return;
   
@@ -82,6 +103,11 @@ function renderAllMovies(movies) {
   }
   
   grid.innerHTML = movies.map(movie => createMovieCard(movie)).join("");
+
+  if (autoScroll) {
+    const section = document.getElementById("semua-film");
+    if (section) section.scrollIntoView({ behavior: "smooth" });
+  }
 }
 
 // ===== CREATE MOVIE CARD =====
@@ -91,7 +117,7 @@ function createMovieCard(movie) {
     : '<button class="watch-btn" onclick="alert(\'Link nonton belum tersedia\')"><i class="fas fa-play"></i> Tonton</button>';
   
   return `
-    <div class="movie-card">
+    <div class="movie-card" ontouchstart="this.classList.add('touch-active')" ontouchend="this.classList.remove('touch-active')">
       <img src="${movie.poster}" alt="${movie.title}" class="movie-poster">
       <div class="overlay">
         ${watchButton}
@@ -124,7 +150,7 @@ if (searchInput) {
       try {
         const response = await fetch(`API/movies/search_movies.php?query=${encodeURIComponent(searchTerm)}`);
         const movies = await response.json();
-        renderAllMovies(movies);
+        renderAllMovies(movies, true);
       } catch (error) {
         console.error("Error searching movies:", error);
         const grid = document.getElementById("allMoviesGrid");
@@ -653,6 +679,12 @@ function openShare(movieId, movieTitle) {
   
   modal.classList.add('active');
   document.body.style.overflow = 'hidden';
+
+  window._currentShareMovie = { poster: '', rating: '', year: '', genre: [] };
+  if (window.allMovies) {
+    const found = allMovies.find(m => m.id === movieId);
+    if (found) window._currentShareMovie = found;
+  }
 }
 
 function closeShare() {
@@ -922,7 +954,9 @@ document.addEventListener('DOMContentLoaded', function() {
       easing: 'ease-out-cubic',
       once: true,
       offset: 100,
-      delay: 100
+      delay: 50,
+      disable: false,
+      startEvent: 'DOMContentLoaded'
     });
   }
   
@@ -1171,3 +1205,220 @@ function closeHistory() {
     }
 }
 
+// ===== SHARE TO STORY =====
+function shareToStory(movieId, movieTitle, moviePoster, movieRating, movieYear, movieGenre) {
+  // Buka modal story
+  let modal = document.getElementById('storyModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'storyModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <div class="modal-content story-modal-content" style="max-width:420px;padding:0;border-radius:20px;overflow:hidden;background:#0e0e0e;border:1px solid rgba(255,255,255,0.1);">
+        <div style="padding:1.5rem;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
+          <h3 style="font-size:1rem;font-weight:600;color:#fff;">Share to Story</h3>
+          <span class="close" onclick="closeStoryModal()" style="position:static;font-size:1.6rem;color:#aaa;">&times;</span>
+        </div>
+        <div style="padding:1.5rem;display:flex;flex-direction:column;align-items:center;gap:1.25rem;">
+          <canvas id="storyCanvas" style="border-radius:12px;max-width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.6);"></canvas>
+          <div style="display:flex;gap:0.75rem;width:100%;">
+            <button onclick="downloadStoryCard()" style="flex:1;padding:0.8rem;background:linear-gradient(135deg,#ff003c,#ff4d7a);border:none;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-size:0.9rem;">
+              <i class="fas fa-download"></i> Download
+            </button>
+            <button onclick="copyStoryToClipboard()" id="copyStoryBtn" style="flex:1;padding:0.8rem;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:#fff;font-weight:600;cursor:pointer;font-size:0.9rem;">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Generate card setelah modal muncul
+  setTimeout(() => generateStoryCard(movieTitle, moviePoster, movieRating, movieYear, movieGenre), 100);
+}
+
+function closeStoryModal() {
+  const modal = document.getElementById('storyModal');
+  if (modal) { modal.classList.remove('active'); document.body.style.overflow = ''; }
+}
+
+function generateStoryCard(title, posterUrl, rating, year, genre) {
+  const canvas = document.getElementById('storyCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  // 9:16 ratio — story format
+  const W = 360, H = 640;
+  canvas.width  = W;
+  canvas.height = H;
+
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    // --- Background: blurred poster ---
+    ctx.filter = 'blur(24px) brightness(0.3)';
+    ctx.drawImage(img, -30, -30, W + 60, H + 60);
+    ctx.filter = 'none';
+
+    // --- Dark overlay ---
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0,   'rgba(0,0,0,0.15)');
+    grad.addColorStop(0.5, 'rgba(0,0,0,0.45)');
+    grad.addColorStop(1,   'rgba(0,0,0,0.92)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // --- Poster (centered, clean) ---
+    const pW = 200, pH = 300;
+    const pX = (W - pW) / 2, pY = 80;
+    
+    // Poster shadow
+    ctx.shadowColor   = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur    = 30;
+    ctx.shadowOffsetY = 10;
+
+    // Rounded rect clip untuk poster
+    ctx.save();
+    roundRect(ctx, pX, pY, pW, pH, 12);
+    ctx.clip();
+    ctx.drawImage(img, pX, pY, pW, pH);
+    ctx.restore();
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+    // --- Info area ---
+    const infoY = pY + pH + 32;
+
+    // Genre pill
+    const genreText = Array.isArray(genre) ? genre.slice(0, 2).join(' · ') : genre;
+    ctx.font         = '500 11px sans-serif';
+    ctx.fillStyle    = 'rgba(255,255,255,0.55)';
+    ctx.textAlign    = 'center';
+    ctx.fillText(genreText.toUpperCase(), W / 2, infoY);
+
+    // Title
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    const titleFontSize = title.length > 22 ? 20 : 24;
+    ctx.font = `700 ${titleFontSize}px sans-serif`;
+    wrapText(ctx, title, W / 2, infoY + 26, W - 60, titleFontSize + 6);
+
+    // Rating + Year row
+    const metaY = infoY + 78;
+
+    // Rating star
+    ctx.font      = '600 14px sans-serif';
+    ctx.fillStyle = '#ffc107';
+    ctx.textAlign = 'center';
+    ctx.fillText(`★  ${parseFloat(rating).toFixed(1)}   ·   ${year}`, W / 2, metaY);
+
+    // Divider line
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, metaY + 18); ctx.lineTo(W - 40, metaY + 18);
+    ctx.stroke();
+
+    // Branding
+    ctx.font      = '700 13px sans-serif';
+    ctx.fillStyle = '#ff003c';
+    ctx.textAlign = 'center';
+    ctx.fillText('PoncolVerse', W / 2, metaY + 38);
+
+    ctx.font      = '400 10px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillText('poncolverse.com', W / 2, metaY + 54);
+  };
+
+  img.onerror = () => {
+    // Fallback: solid background tanpa gambar
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, W, H);
+    renderTextOnly(ctx, title, rating, year, genre, W, H);
+  };
+
+  img.src = posterUrl;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  let lineCount = 0;
+  for (let n = 0; n < words.length; n++) {
+    const testLine  = line + words[n] + ' ';
+    const metrics   = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), x, y + (lineCount * lineHeight));
+      line = words[n] + ' ';
+      lineCount++;
+      if (lineCount >= 2) { ctx.fillText(line.trim() + '…', x, y + (lineCount * lineHeight)); return; }
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line.trim(), x, y + (lineCount * lineHeight));
+}
+
+function renderTextOnly(ctx, title, rating, year, genre, W, H) {
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+  ctx.font = '700 22px sans-serif';
+  ctx.fillText(title, W/2, H/2);
+}
+
+function downloadStoryCard() {
+  const canvas = document.getElementById('storyCanvas');
+  const link   = document.createElement('a');
+  link.download = 'poncolverse-story.png';
+  link.href     = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function copyStoryToClipboard() {
+  const canvas = document.getElementById('storyCanvas');
+  try {
+    canvas.toBlob(async (blob) => {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      const btn = document.getElementById('copyStoryBtn');
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      btn.style.borderColor = '#00ff88';
+      btn.style.color = '#00ff88';
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
+    });
+  } catch {
+    showToast('info', 'Tip', 'Gunakan tombol Download untuk menyimpan gambar.');
+  }
+}
+
+function openStoryFromShare() {
+  closeShare();
+  const m = window._currentShareMovie || {};
+  shareToStory(
+    currentShareMovieId,
+    currentShareMovieTitle,
+    m.poster || '',
+    m.rating || '0',
+    m.year   || '',
+    m.genre  || []
+  );
+}
