@@ -78,6 +78,7 @@ $comments_result = $comments_stmt->get_result();
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
   <style>
     /* Movie Detail Styles */
     .movie-detail-container {
@@ -542,6 +543,33 @@ $comments_result = $comments_stmt->get_result();
 </head>
 
 <body>
+
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="mobile-drawer" id="mobileDrawer">
+    <div class="drawer-header">
+      <span class="drawer-logo">PoncolVerse</span>
+      <button class="drawer-close" onclick="closeDrawer()">&#x2715;</button>
+    </div>
+    <div class="drawer-nav">
+      <a href="index.php" class="drawer-nav-item"><i class="fas fa-home"></i> Beranda</a>
+      <a href="index.php#film" class="drawer-nav-item"><i class="fas fa-fire"></i> Film Populer</a>
+      <a href="index.php#semua-film" class="drawer-nav-item"><i class="fas fa-film"></i> Semua Film</a>
+      <?php if (isset($_SESSION['user_id'])): ?>
+        <?php if ($_SESSION['user_role'] === 'admin'): ?>
+        <a href="admin/index-admin.php" class="drawer-nav-item admin-item"><i class="fas fa-cog"></i> Admin Panel</a>
+        <?php endif; ?>
+        <button class="drawer-nav-item" onclick="toggleWatchlist(<?php echo $movie_id; ?>); closeDrawer();"><i class="fas fa-bookmark"></i> Toggle Watchlist</button>
+      <?php else: ?>
+        <button class="drawer-nav-item" onclick="openLogin(); closeDrawer();"><i class="fas fa-sign-in-alt"></i> Login</button>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <!-- Burger mobile di detail page -->
+  <button class="burger-btn" onclick="openDrawer()" style="position:fixed;top:16px;right:16px;z-index:1001;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:0.5rem 0.7rem;">
+    <i class="fas fa-bars"></i>
+  </button>
+
   <a href="index.php" class="back-button">
     <i class="fas fa-arrow-left"></i> Kembali
   </a>
@@ -831,6 +859,10 @@ $comments_result = $comments_stmt->get_result();
           <button class="share-btn share-btn-telegram" onclick="shareToTelegram()">
             <i class="fab fa-telegram"></i>
             <span>Telegram</span>
+          </button>
+          <button class="share-btn share-btn-story" onclick="shareToStory(currentShareMovieId, currentShareMovieTitle, '<?php echo htmlspecialchars($movie['poster']); ?>', '<?php echo $movie['rating']; ?>', '<?php echo $movie['year']; ?>', <?php echo json_encode($genre_array); ?>)">
+            <i class="fas fa-image"></i>
+            <span>Story Card</span>
           </button>
         </div>
       </div>
@@ -1294,6 +1326,20 @@ $comments_result = $comments_stmt->get_result();
         showToast('error', 'Error', 'Terjadi kesalahan. Silakan coba lagi.');
       }
     });
+  </script>
+
+  <script>
+  function openDrawer() {
+    document.getElementById('mobileDrawer').classList.add('open');
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    document.getElementById('mobileDrawer').classList.remove('open');
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
   </script>
 </body>
 
